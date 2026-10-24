@@ -79,8 +79,20 @@ export default function App() {
   // Current Dataset state: initial is the Algorithmic Hackathon preset
   const [dataset, setDataset] = useState<LeaderboardDataset>(() => readCachedDataset() || PRESET_DATASETS[0]);
 
-  // View & Filter states
-  const [viewMode, setViewMode] = useState<ViewMode>('podium-columns');
+  // View & Filter states: Tự động nhận diện tham số URL ?view=columns nếu có
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlView = params.get('view') as ViewMode;
+      if (['podium-columns', 'columns', 'horizontal-bars', 'table'].includes(urlView)) {
+        return urlView;
+      }
+    } catch {
+      // Bỏ qua lỗi khi parse URL trong môi trường hạn chế
+    }
+    return 'podium-columns';
+  });
+
   const [searchQuery, setSearchQuery] = useState<string>('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [sortOrder, setSortOrder] = useState<SortOrder>('score-desc');
@@ -267,7 +279,9 @@ export default function App() {
               <span>Bục + Cột Xếp Hạng</span>
             </button>
 
+            {/* Nút Chỉ Biểu Đồ Cột với id="btn-view-columns" phục vụ tự động hóa click */}
             <button
+              id="btn-view-columns"
               onClick={() => setViewMode('columns')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all whitespace-nowrap shrink-0 ${
                 viewMode === 'columns'
@@ -356,21 +370,6 @@ export default function App() {
               }}
             />
 
-            {/* Bọc định danh barchart-section phục vụ chụp ảnh tự động */}
-            <div id="barchart-section">
-              <ColumnLeaderboard
-                items={processedItems}
-                totalMembers={dataset.totalMembers}
-                maxReferenceScore={dataset.maxPossibleScore}
-                selectedMemberId={selectedMemberId}
-                onSelectMember={(m) => setSelectedMemberId(m.id)}
-              />
-            </div>
-          </div>
-        )}
-
-        {viewMode === 'columns' && (
-          <div id="barchart-section">
             <ColumnLeaderboard
               items={processedItems}
               totalMembers={dataset.totalMembers}
@@ -379,6 +378,16 @@ export default function App() {
               onSelectMember={(m) => setSelectedMemberId(m.id)}
             />
           </div>
+        )}
+
+        {viewMode === 'columns' && (
+          <ColumnLeaderboard
+            items={processedItems}
+            totalMembers={dataset.totalMembers}
+            maxReferenceScore={dataset.maxPossibleScore}
+            selectedMemberId={selectedMemberId}
+            onSelectMember={(m) => setSelectedMemberId(m.id)}
+          />
         )}
 
         {viewMode === 'horizontal-bars' && (
