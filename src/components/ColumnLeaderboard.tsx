@@ -28,7 +28,10 @@ export const ColumnLeaderboard: React.FC<ColumnLeaderboardProps> = ({
 
   if (items.length === 0) {
     return (
-      <div className="p-12 rounded-2xl bg-slate-900/60 border border-slate-800 text-center flex flex-col items-center justify-center">
+      <div 
+        id="barchart-section"
+        className="p-12 rounded-2xl bg-slate-900/60 border border-slate-800 text-center flex flex-col items-center justify-center"
+      >
         <BarChart3 className="w-12 h-12 text-slate-600 mb-3" />
         <h3 className="text-lg font-semibold text-slate-300">Chưa có thành viên nào trong danh sách</h3>
         <p className="text-sm text-slate-500 max-w-md mt-1">
@@ -47,7 +50,10 @@ export const ColumnLeaderboard: React.FC<ColumnLeaderboardProps> = ({
   const gridTicks = [1, 0.75, 0.5, 0.25, 0];
 
   return (
-    <section id="chart-columns" className="relative p-5 sm:p-7 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl overflow-hidden">
+    <section 
+      id="barchart-section" 
+      className="relative p-5 sm:p-7 rounded-2xl bg-slate-900/80 border border-slate-800 shadow-xl overflow-hidden"
+    >
       {/* Title & Legend & Scale Mode Controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -147,9 +153,6 @@ export const ColumnLeaderboard: React.FC<ColumnLeaderboardProps> = ({
               const isSelected = selectedMemberId === item.id;
               const isZero = item.score === 0;
 
-              // Compute height percentage:
-              // If zero score: minimum baseline bar of 5% with dashed border
-              // If > 0 score: proportional height with minimum 10%
               const rawPercent = (item.score / targetScale) * 100;
               const heightPercent = isZero ? 5 : Math.max(10, Math.min(100, rawPercent));
 
@@ -170,10 +173,7 @@ export const ColumnLeaderboard: React.FC<ColumnLeaderboardProps> = ({
                   onMouseLeave={() => setHoveredMember(null)}
                 >
                   {/* Floating Score Tag & Rank Badge above Column */}
-                  <div
-                    className="flex flex-col items-center mb-2 transition-transform duration-200 group-hover:-translate-y-1"
-                  >
-                    {/* Rank pill */}
+                  <div className="flex flex-col items-center mb-2 transition-transform duration-200 group-hover:-translate-y-1">
                     <span
                       className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full mb-1 shadow-sm transition-all ${
                         rank <= 3 ? colorScheme.badgeBg : 'bg-slate-800 text-slate-300 border border-slate-700'
@@ -182,7 +182,6 @@ export const ColumnLeaderboard: React.FC<ColumnLeaderboardProps> = ({
                       #{rank}
                     </span>
 
-                    {/* Numeric Score */}
                     <span
                       className={`font-mono text-xs sm:text-sm font-bold tabular-nums transition-colors ${
                         isZero
@@ -218,17 +217,14 @@ export const ColumnLeaderboard: React.FC<ColumnLeaderboardProps> = ({
                         isZero ? 'border-dashed border-slate-700' : colorScheme.barBorder
                       } ${isSelected ? 'ring-2 ring-white scale-105' : ''}`}
                     >
-                      {/* Top shine highlight for non-zero scores */}
                       {!isZero && (
                         <div className="absolute top-0 inset-x-0 h-1.5 bg-white/40 rounded-t-xl" />
                       )}
 
-                      {/* Subtle vertical texture shimmer */}
                       {!isZero && (
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       )}
 
-                      {/* In-bar Avatar initial if column is tall enough */}
                       {heightPercent >= 28 && (
                         <div className="absolute bottom-2 inset-x-0 flex justify-center">
                           <span className="w-6 h-6 rounded-full bg-slate-950/60 backdrop-blur-sm text-white text-[10px] font-bold flex items-center justify-center border border-white/20">
