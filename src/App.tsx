@@ -10,6 +10,7 @@ import {
   Trophy,
   LayoutGrid,
   List,
+  RefreshCw,
   Sparkles,
 } from 'lucide-react';
 import { LeaderboardDataset, ViewMode, SortOrder, ScoreTierFilter } from './types/leaderboard';
@@ -17,13 +18,14 @@ import { PRESET_DATASETS } from './data/presets';
 import { calculateLeaderboardStats } from './utils/stats';
 import { fireConfettiBurst } from './utils/confetti';
 import { soundEffects } from './utils/audio';
-import { fetchLeaderboardFromWebhook } from './utils/api';
+import { DATABASE_CONFIG, fetchDatabaseDataset, readDatabaseCache } from './utils/database';
 
 import { Header } from './components/Header';
 import { PodiumShowcase } from './components/PodiumShowcase';
 import { ColumnLeaderboard } from './components/ColumnLeaderboard';
 import { HorizontalBarsLeaderboard } from './components/HorizontalBarsLeaderboard';
 import { TableLeaderboard } from './components/TableLeaderboard';
+import { DataManagementModal } from './components/DataManagementModal';
 
 function datasetsMatch(first: LeaderboardDataset, second: LeaderboardDataset) {
   if (
@@ -51,7 +53,7 @@ function datasetsMatch(first: LeaderboardDataset, second: LeaderboardDataset) {
 }
 
 const CACHE_KEY = 'SCORECHART_PRO_LAST_DATA';
-const SYNC_INTERVAL = Number(import.meta.env.VITE_SYNC_INTERVAL) || 30000;
+const SYNC_INTERVAL = DATABASE_CONFIG.syncIntervalMs;
 
 function readCachedDataset(): LeaderboardDataset | null {
   try {
@@ -77,7 +79,10 @@ function readCachedDataset(): LeaderboardDataset | null {
 
 export default function App() {
   // Current Dataset state: initial is the Algorithmic Hackathon preset
-  const [dataset, setDataset] = useState<LeaderboardDataset>(() => readCachedDataset() || PRESET_DATASETS[0]);
+  const [dataset, setDataset] = useState<LeaderboardDataset>(
+    () => readDatabaseCache() || readCachedDataset() || PRESET_DATASETS[0]
+  );
+  const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
 
   // View & Filter states: Tự động nhận diện tham số URL ?view=columns nếu có
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -99,7 +104,7 @@ export default function App() {
   const [tierFilter, setTierFilter] = useState<ScoreTierFilter>('all');
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
-  // Webhook sync states
+  // Google Sheets sync states
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
@@ -122,22 +127,21 @@ export default function App() {
     }
   }, []);
 
-  // Hàm fetch() dữ liệu từ endpoint Webhook
-  const handleSyncWebhook = useCallback(async () => {
+  const handleSyncDatabase = useCallback(async () => {
     if (syncInFlight.current) return;
     syncInFlight.current = true;
     setIsSyncing(true);
     setSyncStatus('loading');
     try {
-      const liveData = await fetchLeaderboardFromWebhook();
+      const liveData = await fetchDatabaseDataset();
       replaceDataset(liveData);
       setSyncStatus('success');
       setLastSyncTime(new Date());
       setSyncError(null);
     } catch (err: any) {
-      console.warn('Lỗi khi fetch webhook leaderboard:', err);
+      console.warn('Lỗi khi đồng bộ Google Sheets:', err);
       setSyncStatus('error');
-      setSyncError(err?.message || 'Không thể kết nối đến dịch vụ n8n. Dữ liệu cache gần nhất vẫn được giữ lại.');
+      setSyncError(err?.message || 'Không thể kết nối đến Google Sheets. Dữ liệu Database cache gần nhất vẫn được giữ lại.');
     } finally {
       syncInFlight.current = false;
       setIsSyncing(false);
@@ -146,17 +150,17 @@ export default function App() {
 
   // Tự động fetch dữ liệu ngay khi tải trang web
   useEffect(() => {
-    handleSyncWebhook();
-  }, [handleSyncWebhook]);
+    handleSyncDatabase();
+  }, [handleSyncDatabase]);
 
-  // Tự động đồng bộ mỗi 10-30 giây nếu bật autoSync
+  // Tự động đồng bộ Google Sheets mỗi 30 giây.
   useEffect(() => {
     if (!autoSync) return;
     const interval = setInterval(() => {
-      handleSyncWebhook();
+      handleSyncDatabase();
     }, SYNC_INTERVAL);
     return () => clearInterval(interval);
-  }, [autoSync, handleSyncWebhook]);
+  }, [autoSync, handleSyncDatabase]);
 
   // Calculate high-level stats for the entire dataset
   const stats = useMemo(() => {
@@ -240,6 +244,7 @@ export default function App() {
         soundEnabled={soundEnabled}
         onToggleSound={toggleSound}
         onNavigateTo={handleNavigateTo}
+        onOpenDatabase={() => setIsDatabaseOpen(true)}
       />
 
       {/* Main Container */}
@@ -261,6 +266,28 @@ export default function App() {
             <p className="text-sm text-slate-400 mt-1 max-w-2xl">
               {dataset.subtitle || 'Hiển thị dữ liệu điểm số cá nhân và xếp hạng theo dạng cột đa sắc.'}
             </p>
+            <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
+              <span className={syncStatus === 'error' ? 'text-rose-300' : 'text-emerald-300'}>
+                {syncStatus === 'loading'
+                  ? 'Đang đồng bộ Google Sheets...'
+                  : syncStatus === 'error'
+                    ? 'Đồng bộ lỗi · đang dùng dữ liệu gần nhất'
+                    : lastSyncTime
+                      ? `Đã đồng bộ lúc ${lastSyncTime.toLocaleTimeString('vi-VN')}`
+                      : 'Đang chờ đồng bộ Google Sheets'}
+              </span>
+              {syncError && <span className="text-slate-500">{syncError}</span>}
+              <button
+                type="button"
+                onClick={handleSyncDatabase}
+                disabled={isSyncing}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-700 text-slate-300 hover:text-white hover:border-indigo-500 disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                Đồng bộ ngay
+              </button>
+              <span className="text-slate-500">Tự động mỗi 30 giây</span>
+            </div>
           </div>
         </div>
 
@@ -440,6 +467,13 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      <DataManagementModal
+        isOpen={isDatabaseOpen}
+        onClose={() => setIsDatabaseOpen(false)}
+        currentDataset={dataset}
+        onApplyDataset={replaceDataset}
+      />
     </div>
   );
 }

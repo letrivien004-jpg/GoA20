@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Code, FileText, Sparkles, Download, Check, AlertCircle, RefreshCw, Radio } from 'lucide-react';
+import { X, Code, FileText, Sparkles, Download, Check, AlertCircle, Radio } from 'lucide-react';
 import { LeaderboardDataset, LeaderboardMember } from '../types/leaderboard';
 import { PRESET_DATASETS } from '../data/presets';
-import { LEADERBOARD_WEBHOOK_URL } from '../utils/api';
+import { fetchDatabaseDataset } from '../utils/database';
 
 interface DataManagementModalProps {
   isOpen: boolean;
@@ -25,23 +25,18 @@ export const DataManagementModal: React.FC<DataManagementModalProps> = ({
   const [csvText, setCsvText] = useState<string>('');
   const [jsonError, setJsonError] = useState<string | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
-  const [isFetchingWebhook, setIsFetchingWebhook] = useState<boolean>(false);
+  const [isFetchingDatabase, setIsFetchingDatabase] = useState<boolean>(false);
 
-  // Hàm nạp trực tiếp từ Webhook http://localhost:1234/webhook/leaderboard
-  const handleLoadFromWebhook = async () => {
+  const handleLoadFromGoogleSheet = async () => {
     try {
-      setIsFetchingWebhook(true);
+      setIsFetchingDatabase(true);
       setJsonError(null);
-      const res = await fetch('http://localhost:1234/webhook/leaderboard');
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      }
-      const data = await res.json();
-      setJsonText(JSON.stringify(data, null, 2));
-    } catch (e: any) {
-      setJsonError(`Không thể fetch từ http://localhost:1234/webhook/leaderboard: ${e?.message || e}`);
+      onApplyDataset(await fetchDatabaseDataset());
+      onClose();
+    } catch (error) {
+      setJsonError(error instanceof Error ? error.message : 'Không thể đọc Google Sheets.');
     } finally {
-      setIsFetchingWebhook(false);
+      setIsFetchingDatabase(false);
     }
   };
 
@@ -357,14 +352,13 @@ export const DataManagementModal: React.FC<DataManagementModalProps> = ({
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={handleLoadFromWebhook}
-                    disabled={isFetchingWebhook}
+                    onClick={handleLoadFromGoogleSheet}
+                    disabled={isFetchingDatabase}
                     className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 bg-cyan-950/60 hover:bg-cyan-900/60 px-2.5 py-1 rounded-md border border-cyan-800 transition-colors"
                   >
-                    <RefreshCw className={`w-3 h-3 ${isFetchingWebhook ? 'animate-spin' : ''}`} />
-                    <span>{isFetchingWebhook ? 'Đang fetch...' : 'Nạp từ Webhook (port 1234)'}</span>
+                    <Radio className={`w-3 h-3 ${isFetchingDatabase ? 'animate-pulse' : ''}`} />
+                    <span>{isFetchingDatabase ? 'Đang đọc...' : 'Đồng bộ Google Sheets A:B'}</span>
                   </button>
-
                   <button
                     type="button"
                     onClick={copyToClipboard}
