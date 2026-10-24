@@ -110,14 +110,13 @@ export default function App() {
     }
   }, []);
 
-  // Hàm fetch() dữ liệu từ http://localhost:1234/webhook/leaderboard
+  // Hàm fetch() dữ liệu từ endpoint Webhook
   const handleSyncWebhook = useCallback(async () => {
     if (syncInFlight.current) return;
     syncInFlight.current = true;
     setIsSyncing(true);
     setSyncStatus('loading');
     try {
-      // Thực hiện lệnh fetch() trực tiếp tới endpoint Webhook
       const liveData = await fetchLeaderboardFromWebhook();
       replaceDataset(liveData);
       setSyncStatus('success');
@@ -138,7 +137,7 @@ export default function App() {
     handleSyncWebhook();
   }, [handleSyncWebhook]);
 
-  // Tự động đồng bộ mỗi 10 giây nếu bật autoSync
+  // Tự động đồng bộ mỗi 10-30 giây nếu bật autoSync
   useEffect(() => {
     if (!autoSync) return;
     const interval = setInterval(() => {
@@ -236,7 +235,6 @@ export default function App() {
         {/* Hero Title Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-slate-800/80">
           <div>
-            {/* Clean unboxed metadata with bullet separators */}
             <div className="flex items-center gap-2 text-xs text-indigo-400 font-semibold mb-1">
               <span>{dataset.category || 'Bảng Xếp Hạng Điểm'}</span>
               <span aria-hidden="true">·</span>
@@ -252,12 +250,10 @@ export default function App() {
               {dataset.subtitle || 'Hiển thị dữ liệu điểm số cá nhân và xếp hạng theo dạng cột đa sắc.'}
             </p>
           </div>
-
         </div>
 
         {/* Interactive View Mode & Filter Bar */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-          {/* View mode segmented controls */}
           <div className="flex items-center gap-1 p-1 bg-slate-950/80 rounded-lg border border-slate-800/80 overflow-x-auto">
             <button
               onClick={() => setViewMode('podium-columns')}
@@ -308,7 +304,7 @@ export default function App() {
             </button>
           </div>
 
-          {/* Search & Sort Controls: only needed in the detailed table view */}
+          {/* Search & Sort Controls */}
           {viewMode === 'table' && (
             <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
               <div className="relative w-full sm:w-56">
@@ -360,7 +356,21 @@ export default function App() {
               }}
             />
 
-            {/* Column Chart */}
+            {/* Bọc định danh barchart-section phục vụ chụp ảnh tự động */}
+            <div id="barchart-section">
+              <ColumnLeaderboard
+                items={processedItems}
+                totalMembers={dataset.totalMembers}
+                maxReferenceScore={dataset.maxPossibleScore}
+                selectedMemberId={selectedMemberId}
+                onSelectMember={(m) => setSelectedMemberId(m.id)}
+              />
+            </div>
+          </div>
+        )}
+
+        {viewMode === 'columns' && (
+          <div id="barchart-section">
             <ColumnLeaderboard
               items={processedItems}
               totalMembers={dataset.totalMembers}
@@ -369,16 +379,6 @@ export default function App() {
               onSelectMember={(m) => setSelectedMemberId(m.id)}
             />
           </div>
-        )}
-
-        {viewMode === 'columns' && (
-          <ColumnLeaderboard
-            items={processedItems}
-            totalMembers={dataset.totalMembers}
-            maxReferenceScore={dataset.maxPossibleScore}
-            selectedMemberId={selectedMemberId}
-            onSelectMember={(m) => setSelectedMemberId(m.id)}
-          />
         )}
 
         {viewMode === 'horizontal-bars' && (
@@ -431,7 +431,6 @@ export default function App() {
           </div>
         </div>
       </footer>
-
     </div>
   );
 }
