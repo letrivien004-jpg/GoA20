@@ -25,7 +25,6 @@ import { PodiumShowcase } from './components/PodiumShowcase';
 import { ColumnLeaderboard } from './components/ColumnLeaderboard';
 import { HorizontalBarsLeaderboard } from './components/HorizontalBarsLeaderboard';
 import { TableLeaderboard } from './components/TableLeaderboard';
-import { DataManagementModal } from './components/DataManagementModal';
 
 function datasetsMatch(first: LeaderboardDataset, second: LeaderboardDataset) {
   if (
@@ -82,7 +81,6 @@ export default function App() {
   const [dataset, setDataset] = useState<LeaderboardDataset>(
     () => readDatabaseCache() || readCachedDataset() || PRESET_DATASETS[0]
   );
-  const [isDatabaseOpen, setIsDatabaseOpen] = useState(false);
 
   // View & Filter states: Tự động nhận diện tham số URL ?view=columns nếu có
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -244,7 +242,6 @@ export default function App() {
         soundEnabled={soundEnabled}
         onToggleSound={toggleSound}
         onNavigateTo={handleNavigateTo}
-        onOpenDatabase={() => setIsDatabaseOpen(true)}
       />
 
       {/* Main Container */}
@@ -468,12 +465,6 @@ export default function App() {
         </div>
       </footer>
 
-      <DataManagementModal
-        isOpen={isDatabaseOpen}
-        onClose={() => setIsDatabaseOpen(false)}
-        currentDataset={dataset}
-        onApplyDataset={replaceDataset}
-      />
     </div>
   );
 }

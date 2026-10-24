@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { soundEffects } from '../utils/audio';
 
 interface HeaderProps {
@@ -7,7 +7,6 @@ interface HeaderProps {
   soundEnabled: boolean;
   onToggleSound: () => void;
   onNavigateTo: (section: 'podium' | 'chart' | 'table') => void;
-  onOpenDatabase: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -15,7 +14,6 @@ export const Header: React.FC<HeaderProps> = ({
   soundEnabled,
   onToggleSound,
   onNavigateTo,
-  onOpenDatabase,
 }) => {
   return (
     <header className="flex items-center justify-between gap-8 px-6 py-4 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-30">
@@ -51,15 +49,6 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Zone 3: 1 primary action cluster */}
       <div className="flex items-center gap-2.5 shrink-0">
-        <button
-          onClick={onOpenDatabase}
-          title="Mở Database Google Sheets"
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 rounded-lg transition-colors whitespace-nowrap shrink-0"
-        >
-          <Database className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Database</span>
-        </button>
-
         <button
           onClick={onToggleSound}
           title={soundEnabled ? 'Tắt âm thanh hiệu ứng' : 'Bật âm thanh hiệu ứng'}
