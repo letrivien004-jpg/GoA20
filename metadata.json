@@ -1,0 +1,6 @@
+{
+  "name": "Bảng Xếp Hạng Điểm Dạng Cột",
+  "description": "Giao diện bảng xếp hạng điểm dạng cột đa màu sắc hiện đại, hiển thị dữ liệu name, score và tổng thành viên tham gia.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
